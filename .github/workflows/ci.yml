@@ -1,0 +1,42 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.find.outputs.modules }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: find
+        run: |
+          mods=$(find . -name go.mod -not -path './.git/*' -exec dirname {} \; | sort | jq -R . | jq -sc .)
+          echo "modules=$mods" >> "$GITHUB_OUTPUT"
+
+  test:
+    needs: discover
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: ${{ fromJson(needs.discover.outputs.modules) }}
+    defaults:
+      run:
+        working-directory: ${{ matrix.module }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: ${{ matrix.module }}/go.sum
+      - run: go vet ./...
+      - name: prefetch deps (network allowed only here)
+        run: go mod download && go test -race -run '^$' ./...
+      - name: tests with no network
+        # in-memory requirement: no outbound traffic, no TCP listener
+        run: unshare -rn go test -race ./...
+      - name: go mod tidy is clean
+        run: go mod tidy && git diff --exit-code -- go.mod go.sum

@@ -34,6 +34,18 @@ func TestTransportServesWithoutSocket(t *testing.T) {
 	}
 }
 
+func TestTransportGivesHandlersNonNilBody(t *testing.T) {
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Panics if r.Body is nil, as real servers never leave it nil.
+		_, _ = io.ReadAll(http.MaxBytesReader(w, r.Body, 1<<10))
+	})
+	res, err := Client(h).Get("http://fake.invalid/")
+	if err != nil {
+		t.Fatal(err)
+	}
+	res.Body.Close()
+}
+
 func TestTransportHonoursCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()

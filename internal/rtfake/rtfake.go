@@ -27,6 +27,11 @@ func (rt roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	// Handlers expect a server-side request; RequestURI is only set there.
 	sreq := req.Clone(req.Context())
 	sreq.RequestURI = req.URL.RequestURI()
+	// Server requests always carry a non-nil Body; handlers wrap it
+	// (e.g. http.MaxBytesReader) without a nil check.
+	if sreq.Body == nil {
+		sreq.Body = http.NoBody
+	}
 	if sreq.Host == "" {
 		sreq.Host = req.URL.Host
 	}

@@ -4,6 +4,7 @@ use (
 	.
 	./awssmtest
 	./azsecretstest
+	./gcpsmtest
 	./openbaotest
 	./openbaotest/shim
 	./vaulttest

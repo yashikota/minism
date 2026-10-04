@@ -136,3 +136,15 @@ func (s *Store[V]) Keys() []string {
 
 // Len counts live entries.
 func (s *Store[V]) Len() int { return len(s.Keys()) }
+
+// Update mutates one version (1-based) of a live entry in place.
+func (s *Store[V]) Update(key string, num int, fn func(*V)) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	e, ok := s.items[key]
+	if !ok || e.deleted || num < 1 || num > len(e.versions) {
+		return ErrNotFound
+	}
+	fn(&e.versions[num-1].Value)
+	return nil
+}

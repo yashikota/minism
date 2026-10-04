@@ -56,3 +56,21 @@ func TestKeysSortedAndLive(t *testing.T) {
 		t.Fatalf("len = %d", s.Len())
 	}
 }
+
+func TestUpdateMutatesOneVersion(t *testing.T) {
+	s := New[string]()
+	s.Put("a", "v1")
+	s.Put("a", "v2")
+	if err := s.Update("a", 1, func(v *string) { *v = "patched" }); err != nil {
+		t.Fatal(err)
+	}
+	if v, _ := s.At("a", 1); v.Value != "patched" {
+		t.Fatalf("v1 = %v", v)
+	}
+	if v, _ := s.At("a", 2); v.Value != "v2" {
+		t.Fatalf("v2 changed: %v", v)
+	}
+	if err := s.Update("a", 9, func(*string) {}); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("want ErrNotFound, got %v", err)
+	}
+}

@@ -7,7 +7,7 @@ require (
 	github.com/hashicorp/vault-plugin-secrets-kv v0.25.0
 	github.com/hashicorp/vault/api v1.22.0
 	github.com/hashicorp/vault/sdk v0.21.0
-	github.com/yashikota/minism v0.0.0-20261004225256-f3a953ea3aad
+	github.com/yashikota/minism v0.0.0
 )
 
 require (
@@ -341,3 +341,5 @@ replace github.com/hashicorp/vault/sdk => github.com/hashicorp/vault/sdk v0.19.1
 replace github.com/hashicorp/vault/api => github.com/hashicorp/vault/api v1.21.1-0.20260305014005-ffe7023c481d
 
 replace github.com/tencentcloud/tencentcloud-sdk-go => github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.479
+
+replace github.com/yashikota/minism => ../

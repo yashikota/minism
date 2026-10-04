@@ -5,6 +5,7 @@ use (
 	./awssmtest
 	./azsecretstest
 	./gcpsmtest
+	./onepasswordtest
 	./openbaotest
 	./openbaotest/shim
 	./vaulttest

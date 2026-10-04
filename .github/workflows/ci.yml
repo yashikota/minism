@@ -50,7 +50,7 @@ jobs:
         # unprivileged user namespaces; drop back to the runner user for go.
         run: |
           sudo unshare --net -- sudo -u "$USER" -E env "PATH=$PATH" "HOME=$HOME" \
-            "GOCACHE=$(go env GOCACHE)" "GOMODCACHE=$(go env GOMODCACHE)" "GOTOOLCHAIN=$(go env GOTOOLCHAIN)" \
+            "GOCACHE=$(go env GOCACHE)" "GOMODCACHE=$(go env GOMODCACHE)" "GOTOOLCHAIN=$(go env GOTOOLCHAIN)" "GOWORK=off" "GOPROXY=off" \
             go test -race -count=1 ./...
       - name: go mod tidy is clean
         run: |

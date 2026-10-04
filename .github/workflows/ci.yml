@@ -25,6 +25,9 @@ jobs:
       fail-fast: false
       matrix:
         module: ${{ fromJson(needs.discover.outputs.modules) }}
+    env:
+      # Test each module standalone, exactly as a consumer would build it.
+      GOWORK: "off"
     defaults:
       run:
         working-directory: ${{ matrix.module }}
@@ -39,9 +42,7 @@ jobs:
       - run: gofmt -l . | tee /dev/stderr | (! grep .)
       - run: go vet ./...
       - name: prefetch (network is allowed only in this step)
-        run: |
-          go mod download
-          go test -race -count=1 -run '^$' ./...
+        run: go test -race -count=1 -run '^$' ./...
       - name: tests with the network cut off
         # In-memory requirement: a fresh network namespace has no route out and
         # nothing can be reached on loopback either (lo is down), so any real

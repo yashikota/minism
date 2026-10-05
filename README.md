@@ -1,5 +1,7 @@
 # minism
 
+English | [日本語](README.ja.md)
+
 Fake secret managers for Go tests: AWS Secrets Manager, Google Secret Manager, Azure Key Vault,
 HashiCorp Vault, 1Password and more. They run inside your test process, so you need no internet,
 no Docker and no real account.

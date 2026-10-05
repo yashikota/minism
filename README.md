@@ -2,66 +2,85 @@
 
 English | [日本語](README.ja.md)
 
-Fake secret managers for Go tests: AWS Secrets Manager, Google Secret Manager, Azure Key Vault,
-HashiCorp Vault, 1Password and more. They run inside your test process, so you need no internet,
-no Docker and no real account.
+Fake secret managers for Go tests. In memory. No network, no Docker, no account.
 
-## The problem
+## Start (2 minutes)
 
-Your app reads a database password from AWS Secrets Manager. How do you test it?
+1. Install the provider you use (AWS shown; others are [below](#pick-your-provider)):
 
-- Call real AWS: slow, needs credentials, and tests can break each other.
-- Write your own mock of the AWS client: lots of code, and it only checks that your code calls
-  what you mocked, not that it works with the real client.
+   ```
+   go get github.com/yashikota/minism/awssmtest
+   ```
 
-## What minism does
+2. In a test, create the fake and take its client:
 
-It gives you a fake Secrets Manager that lives in memory. You put secrets into it, and your app
-reads them through the normal AWS client library, exactly as it does in production.
+   ```go
+   client := awssmtest.New(t).Client() // the normal *secretsmanager.Client, pointed at the fake
 
-```go
-fake := awssmtest.New(t)       // an empty, in-memory AWS Secrets Manager
-client := fake.Client()        // the normal *secretsmanager.Client, pointed at the fake
+   client.CreateSecret(ctx, &secretsmanager.CreateSecretInput{
+       Name: aws.String("prod/db"), SecretString: aws.String("s3cret"),
+   })
+   out, _ := client.GetSecretValue(ctx, &secretsmanager.GetSecretValueInput{SecretId: aws.String("prod/db")})
+   // *out.SecretString == "s3cret"
+   ```
 
-client.CreateSecret(ctx, &secretsmanager.CreateSecretInput{   // put a secret in...
-    Name: aws.String("prod/db"), SecretString: aws.String("s3cret"),
-})
-password := LoadDBPassword(ctx, client)                        // ...your code reads it back
-```
+3. Run `go test`.
 
-The client is the real one from the AWS SDK, so building requests, signing, error types and
-retries in your code all run for real. Only the server behind the client is fake.
-Each `New(t)` gives a brand-new, empty fake that disappears when the test ends.
-
-The same idea works for the other providers below: you always get back the provider's own
-client, ready to use. See [Using it](#using-it) for a complete, runnable example.
+Your code keeps using the real AWS client. Only the server behind it is fake.
 
 ## Pick your provider
 
-| Provider | Install | You get | Backend | README |
-|---|---|---|---|---|
-| AWS Secrets Manager | `go get github.com/yashikota/minism/awssmtest` | `*secretsmanager.Client` | our in-memory endpoint | [awssmtest](awssmtest/README.md) |
-| Google Secret Manager | `go get github.com/yashikota/minism/gcpsmtest` | `*secretmanager.Client` | our in-memory gRPC server | [gcpsmtest](gcpsmtest/README.md) |
-| Azure Key Vault (secrets) | `go get github.com/yashikota/minism/azsecretstest` | `*azsecrets.Client` | Microsoft's own `azsecrets/fake` | [azsecretstest](azsecretstest/README.md) |
-| HashiCorp Vault | `go get github.com/yashikota/minism/vaulttest` | `*api.Client` | our in-memory KV server | [vaulttest](vaulttest/README.md) |
-| OpenBao | `go get github.com/yashikota/minism/openbaotest` | `*api.Client` | same KV server as Vault | [openbaotest](openbaotest/README.md) |
-| 1Password | `go get github.com/yashikota/minism/onepasswordtest` | `*onepassword.Client` | in-memory APIs injected into the client | [onepasswordtest](onepasswordtest/README.md) |
-| Infisical | `go get github.com/yashikota/minism/infisicaltest` | `infisical.InfisicalClientInterface` | in-memory implementation of the SDK interfaces | [infisicaltest](infisicaltest/README.md) |
-| OCI Vault | `go get github.com/yashikota/minism/ocisecretstest` | `VaultsClient` + `SecretsClient` | our in-memory endpoint | [ocisecretstest](ocisecretstest/README.md) |
-| IBM Cloud Secrets Manager | `go get github.com/yashikota/minism/ibmsmtest` | `*SecretsManagerV2` | our in-memory endpoint | [ibmsmtest](ibmsmtest/README.md) |
-| Akeyless | `go get github.com/yashikota/minism/akeylesstest` | `*akeyless.V2ApiService` | our in-memory endpoint | [akeylesstest](akeylesstest/README.md) |
-| Cloudflare Secrets Store | `go get github.com/yashikota/minism/cfsecretstest` | `*cloudflare.Client` | our in-memory endpoint | [cfsecretstest](cfsecretstest/README.md) |
-| Keeper Secrets Manager | `go get github.com/yashikota/minism/keepertest` | `*core.SecretsManager` | our in-memory encrypted endpoint | [keepertest](keepertest/README.md) |
+Each row is its own Go module. The package name is the last path segment.
 
-Each provider is a separate Go module, so depending on one pulls in only that provider's SDK.
-The package name is the last path segment (`awssmtest`, `gcpsmtest`, ...).
+**Big clouds**
 
-## Using it
+| Provider | Install | Client you get |
+|---|---|---|
+| AWS Secrets Manager | `go get github.com/yashikota/minism/awssmtest` | `*secretsmanager.Client` |
+| Google Secret Manager | `go get github.com/yashikota/minism/gcpsmtest` | `*secretmanager.Client` |
+| Azure Key Vault (secrets) | `go get github.com/yashikota/minism/azsecretstest` | `*azsecrets.Client` |
+| OCI Vault | `go get github.com/yashikota/minism/ocisecretstest` | `VaultsClient` + `SecretsClient` |
+| IBM Cloud Secrets Manager | `go get github.com/yashikota/minism/ibmsmtest` | `*SecretsManagerV2` |
 
-The pattern is the same for every provider. Make your code depend on a small interface (or on the
-SDK client type), then give it the minism client in tests.
+**Vault family and self-hosted**
 
-**Your code** (`app.go`): nothing minism-specific.
+| Provider | Install | Client you get |
+|---|---|---|
+| HashiCorp Vault | `go get github.com/yashikota/minism/vaulttest` | `*api.Client` |
+| OpenBao | `go get github.com/yashikota/minism/openbaotest` | `*api.Client` |
+| Infisical | `go get github.com/yashikota/minism/infisicaltest` | `infisical.InfisicalClientInterface` |
+
+**Password and secret SaaS**
+
+| Provider | Install | Client you get |
+|---|---|---|
+| 1Password | `go get github.com/yashikota/minism/onepasswordtest` | `*onepassword.Client` |
+| Keeper Secrets Manager | `go get github.com/yashikota/minism/keepertest` | `*core.SecretsManager` |
+| Akeyless | `go get github.com/yashikota/minism/akeylesstest` | `*akeyless.V2ApiService` |
+| Cloudflare Secrets Store | `go get github.com/yashikota/minism/cfsecretstest` | `*cloudflare.Client` |
+
+Every provider has a README next to its code (for example [awssmtest](awssmtest/README.md)) with
+what it supports, what it does not, and a runnable snippet.
+
+## Good to know
+
+- **Unsupported calls fail loudly.** You get `minism: <provider> <operation> not implemented`, never a silent success.
+- **No auth check.** Any credentials or token work.
+- **Fresh server per `New(t)`.** Nothing is shared between tests; it is discarded when the test ends.
+- **`Value(...)` and `Seed(...)` are test helpers**, not part of the provider's API. Use them to set up and assert only.
+- **These are not the real services.** They cover create / read / update / delete / list / versions. No IAM, rotation, replication or KMS.
+
+## If a call fails
+
+1. Message contains `not implemented`: the operation is not supported. Open the provider's README, section "Supported".
+2. Anything else: it is the real client reporting a real error from the fake (not found, already exists, ...). Check your test's setup.
+
+<details>
+<summary>Full example: app code and its test (5 minutes)</summary>
+
+Make your code depend on a small interface, then pass the minism client in tests.
+
+`app.go`, with nothing minism-specific:
 
 ```go
 package myapp
@@ -88,7 +107,7 @@ func LoadDBPassword(ctx context.Context, c SecretsAPI) (string, error) {
 }
 ```
 
-**Your test** (`app_test.go`): create what the code expects, then run the code.
+`app_test.go`: create what the code expects, then run the code.
 
 ```go
 package myapp_test
@@ -106,7 +125,7 @@ import (
 
 func TestLoadDBPassword(t *testing.T) {
     ctx := context.Background()
-    client := awssmtest.New(t).Client() // fresh in-memory AWS Secrets Manager
+    client := awssmtest.New(t).Client()
 
     _, err := client.CreateSecret(ctx, &secretsmanager.CreateSecretInput{
         Name: aws.String("prod/db"), SecretString: aws.String("s3cret"),
@@ -122,73 +141,47 @@ func TestLoadDBPassword(t *testing.T) {
 }
 
 func TestMissingSecret(t *testing.T) {
-    // An empty server: the real client returns a real ResourceNotFoundException.
+    // Empty server: the real client returns a real ResourceNotFoundException.
     if _, err := myapp.LoadDBPassword(context.Background(), awssmtest.New(t).Client()); err == nil {
         t.Fatal("expected an error")
     }
 }
 ```
 
-That is the whole recipe: `New(t)` for a fresh server, `.Client()` for the official client,
-then create the state you need through the SDK itself. Other providers work the same way;
-their READMEs have the equivalent snippet.
+</details>
 
-### Adding it to your project
-
-```
-go get github.com/yashikota/minism/awssmtest@latest
-```
-
-Use the `go get` line for each provider you need (the table above lists them). Each provider is
-versioned independently with tags like `awssmtest/v0.1.0`; the shared root module is tagged
-`v0.1.0` and is pulled in automatically.
-
-## What "fake" means here
-
-These are **not** the real services and do not try to be. Each one implements the common
-operations tests need (create / read / update / delete / list / versions) and nothing else.
-No IAM, no rotation, no replication, no KMS, no quotas.
-
-- **Unsupported operations fail loudly.** You get an error saying
-  `minism: <provider> <operation> not implemented` (or the SDK's own "not implemented" error)
-  instead of a silent success. If you hit one, that is a gap to fill, not a bug in your code.
-- **Authentication is not checked.** Any credentials or token are accepted.
-- **Each `New(t)` is a fresh, isolated server.** State is not shared between tests, and it is
-  discarded with the test.
-- **Fixture helpers** such as `Value(...)` or `Seed(...)` let a test look at or preload the
-  server's state directly. They are *not* part of the provider's API; use them for setup and
-  assertions only.
-
-Every provider README lists exactly what is supported and what is not.
-
-## How it works
+<details>
+<summary>How it works</summary>
 
 ```
 your code ──► real SDK client ──► minism transport ──► in-memory server
-              (signing, retries,   (a RoundTripper,       (a small state machine
-               error types)         bufconn, or the        per provider)
-                                    SDK's own test seam)
 ```
 
-How the client is redirected depends on what each SDK offers: an injectable
-`http.Client` (AWS, IBM, OCI, Akeyless, Cloudflare, Vault, OpenBao), a gRPC connection (GCP),
-a vendor-provided fake (Azure), exported API fields (1Password), public interfaces (Infisical),
-or a test-only transport hook (Keeper). Nothing opens a socket; CI runs every module inside a
-network namespace with no route out to prove it.
+The transport depends on what each SDK offers: an injectable `http.Client` (AWS, IBM, OCI,
+Akeyless, Cloudflare, Vault, OpenBao), a gRPC connection (GCP), a vendor-provided fake (Azure),
+exported API fields (1Password), public interfaces (Infisical), or a test-only transport hook
+(Keeper). Nothing opens a socket. CI runs every module in a network namespace with no route out.
 
-## Development
+</details>
 
-Shared code lives in the root module under `internal/`: `memstore` (versioned in-memory
-store), `rtfake` (turns an `http.Handler` into a `RoundTripper`) and `kvfake` (the
-Vault-compatible KV protocol shared by `vaulttest` and `openbaotest`).
+<details>
+<summary>Development</summary>
 
-`go.work` ties the modules together locally. CI builds each module standalone
-(`GOWORK=off`), vets it, pre-fetches dependencies, then runs its tests with the network cut off
-(`unshare --net`, `GOPROXY=off`).
+Shared code is in the root module under `internal/`: `memstore` (versioned in-memory store),
+`rtfake` (turns an `http.Handler` into a `RoundTripper`), `kvfake` (the Vault-compatible KV protocol
+shared by `vaulttest` and `openbaotest`).
+
+`go.work` ties the modules together locally. CI builds each module alone (`GOWORK=off`), vets it,
+then runs its tests with the network cut off (`unshare --net`, `GOPROXY=off`).
 
 ```
 for d in $(find . -name go.mod -exec dirname {} \;); do (cd $d && GOWORK=off go test -race ./...); done
 ```
 
-One known upstream bug is worked around: `azsecrets/fake` v1.5.0 mis-parses
-`/secrets/{name}/{version}`; see [azsecretstest](azsecretstest/README.md).
+Versions are tags: `v0.1.0` for the root module, `awssmtest/v0.1.0` and so on per provider.
+If you change `internal/`, tag the root first, then update each module's `require`.
+
+One upstream bug is worked around: `azsecrets/fake` v1.5.0 mis-parses `/secrets/{name}/{version}`
+(see [azsecretstest](azsecretstest/README.md)).
+
+</details>

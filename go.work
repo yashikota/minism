@@ -5,6 +5,7 @@ use (
 	./akeylesstest
 	./awssmtest
 	./azsecretstest
+	./cfsecretstest
 	./gcpsmtest
 	./ibmsmtest
 	./infisicaltest

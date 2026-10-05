@@ -2,11 +2,9 @@ module github.com/yashikota/minism/openbaotest
 
 go 1.25.0
 
-replace github.com/yashikota/minism => ../
-
 require (
 	github.com/openbao/openbao/api/v2 v2.7.1
-	github.com/yashikota/minism v0.0.0
+	github.com/yashikota/minism v0.1.0
 )
 
 require (

@@ -10,3 +10,5 @@ github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.50.1 h1:xYoGDAZtoSXI5wOfj
 github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.50.1/go.mod h1:dgXxccOMNsXm/eOkrQbBfxm4a6H8IiRphA7z69RG8hM=
 github.com/aws/smithy-go v1.28.1 h1:R/nXH00c8qcfCzQVELtRw+eLQWtzv+VAIEFJ1/xxXlQ=
 github.com/aws/smithy-go v1.28.1/go.mod h1:YE2RhdIuDbA5E5bTdciG9KrW3+TiEONeUWCqxX9i1Fc=
+github.com/yashikota/minism v0.1.0 h1:+qf0bXlmEVD9d4wzZPpUijPEItG+ztLZ7tLGUYrZXfw=
+github.com/yashikota/minism v0.1.0/go.mod h1:l8SYuwN2JAT0asUknfdQneGxdtObYGBX5u9+9R//pQM=

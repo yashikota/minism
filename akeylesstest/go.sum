@@ -1,2 +1,4 @@
 github.com/akeylesslabs/akeyless-go/v5 v5.0.38 h1:/Pqkv4yKmnagnnqj0QejJI1eUAloK2VvgO8oVHNz1KA=
 github.com/akeylesslabs/akeyless-go/v5 v5.0.38/go.mod h1:uHW1ajiKUWCs8onuuxVHZEz5RxZpuOav7e7H1YC3g4I=
+github.com/yashikota/minism v0.1.0 h1:+qf0bXlmEVD9d4wzZPpUijPEItG+ztLZ7tLGUYrZXfw=
+github.com/yashikota/minism v0.1.0/go.mod h1:l8SYuwN2JAT0asUknfdQneGxdtObYGBX5u9+9R//pQM=

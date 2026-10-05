@@ -2,12 +2,10 @@ module github.com/yashikota/minism/ibmsmtest
 
 go 1.26.0
 
-replace github.com/yashikota/minism => ../
-
 require (
 	github.com/IBM/go-sdk-core/v5 v5.24.0
 	github.com/IBM/secrets-manager-go-sdk/v2 v2.0.22
-	github.com/yashikota/minism v0.0.0
+	github.com/yashikota/minism v0.1.0
 )
 
 require (

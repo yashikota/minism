@@ -2,11 +2,9 @@ module github.com/yashikota/minism/ocisecretstest
 
 go 1.25.0
 
-replace github.com/yashikota/minism => ../
-
 require (
 	github.com/oracle/oci-go-sdk/v65 v65.126.1
-	github.com/yashikota/minism v0.0.0
+	github.com/yashikota/minism v0.1.0
 )
 
 require (

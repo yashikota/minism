@@ -1,2 +1,4 @@
 github.com/keeper-security/secrets-manager-go/core v1.7.0 h1:f0ZocSTzzvihPRFphL6Jnudifpu0WoLyuGhXyNE22hA=
 github.com/keeper-security/secrets-manager-go/core v1.7.0/go.mod h1:VEWHE2VDKIHnzuFVb10gvhw04SISAlYyEzVNCRPlk1g=
+github.com/yashikota/minism v0.1.0 h1:+qf0bXlmEVD9d4wzZPpUijPEItG+ztLZ7tLGUYrZXfw=
+github.com/yashikota/minism v0.1.0/go.mod h1:l8SYuwN2JAT0asUknfdQneGxdtObYGBX5u9+9R//pQM=

@@ -2,8 +2,6 @@ module github.com/yashikota/minism/gcpsmtest
 
 go 1.26.0
 
-replace github.com/yashikota/minism => ../
-
 require (
 	cloud.google.com/go/secretmanager v1.22.0
 	google.golang.org/api v0.300.0

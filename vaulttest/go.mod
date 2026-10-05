@@ -2,11 +2,9 @@ module github.com/yashikota/minism/vaulttest
 
 go 1.25.0
 
-replace github.com/yashikota/minism => ../
-
 require (
 	github.com/hashicorp/vault/api v1.23.0
-	github.com/yashikota/minism v0.0.0
+	github.com/yashikota/minism v0.1.0
 )
 
 require (

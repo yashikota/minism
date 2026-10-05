@@ -1,15 +1,38 @@
 # minism
 
-Test doubles for secret managers, for Go. Your code under test keeps using the
-**real official SDK client**; minism swaps what is on the other end of the wire for an
-in-memory server. No network, no Docker, no external process, nothing to clean up.
+Fake secret managers for Go tests: AWS Secrets Manager, Google Secret Manager, Azure Key Vault,
+HashiCorp Vault, 1Password and more. They run inside your test process, so you need no internet,
+no Docker and no real account.
+
+## The problem
+
+Your app reads a database password from AWS Secrets Manager. How do you test it?
+
+- Call real AWS: slow, needs credentials, and tests can break each other.
+- Write your own mock of the AWS client: lots of code, and it only checks that your code calls
+  what you mocked, not that it works with the real client.
+
+## What minism does
+
+It gives you a fake Secrets Manager that lives in memory. You put secrets into it, and your app
+reads them through the normal AWS client library, exactly as it does in production.
 
 ```go
-client := awssmtest.New(t).Client() // a real *secretsmanager.Client, backed by memory
+fake := awssmtest.New(t)       // an empty, in-memory AWS Secrets Manager
+client := fake.Client()        // the normal *secretsmanager.Client, pointed at the fake
+
+client.CreateSecret(ctx, &secretsmanager.CreateSecretInput{   // put a secret in...
+    Name: aws.String("prod/db"), SecretString: aws.String("s3cret"),
+})
+password := LoadDBPassword(ctx, client)                        // ...your code reads it back
 ```
 
-Because the client is the real one, request building, signing, retries, error types and
-pagination in your code are exercised for real. Only the server is fake.
+The client is the real one from the AWS SDK, so building requests, signing, error types and
+retries in your code all run for real. Only the server behind the client is fake.
+Each `New(t)` gives a brand-new, empty fake that disappears when the test ends.
+
+The same idea works for the other providers below: you always get back the provider's own
+client, ready to use. See [Using it](#using-it) for a complete, runnable example.
 
 ## Pick your provider
 

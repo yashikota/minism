@@ -1,59 +1,48 @@
-// Package openbaotest runs the real OpenBao core, in memory, for tests.
+// Package openbaotest gives tests a real OpenBao *api.Client whose HTTP layer is an
+// in-memory OpenBao-compatible KV server (sys/mounts, KV v1 and v2).
 //
-// The official *api.Client talks to OpenBao's real HTTP handler through a
-// RoundTripper; no listener or port is involved. See README for the go.mod
-// replace line this package needs.
+// It is a minimal reimplementation of the wire protocol, not OpenBao itself: there
+// is no auth, policy, lease or seal, and any token is accepted. Unsupported paths
+// answer 501.
 package openbaotest
 
 import (
-	"net/http"
 	"testing"
 
 	"github.com/openbao/openbao/api/v2"
-	"github.com/openbao/openbao/v2/shim"
 
+	"github.com/yashikota/minism/internal/kvfake"
 	"github.com/yashikota/minism/internal/rtfake"
 )
 
-// Server is a running in-memory OpenBao.
+const token = "root"
+
+// Server is an in-memory OpenBao.
 type Server struct {
-	t       testing.TB
-	handler http.Handler
-	token   string
+	t  testing.TB
+	kv *kvfake.Server
 }
 
-// New starts OpenBao with a kv-v2 engine at "secret/", like `bao server -dev`.
-func New(t *testing.T) *Server {
+// New starts the server with a kv-v2 engine mounted at "secret/", like a dev server.
+func New(t testing.TB) *Server {
 	t.Helper()
-	h, token := shim.New(t)
-	s := &Server{t: t, handler: h, token: token}
-
-	// The test core mounts kv-v1 at secret/; replace it with v2.
-	c := s.Client()
-	if err := c.Sys().Unmount("secret"); err != nil {
-		t.Fatalf("openbaotest: unmount secret: %v", err)
-	}
-	err := c.Sys().Mount("secret", &api.MountInput{Type: "kv", Options: map[string]string{"version": "2"}})
-	if err != nil {
-		t.Fatalf("openbaotest: mount kv-v2: %v", err)
-	}
-	return s
+	return &Server{t: t, kv: kvfake.New()}
 }
 
-// Client returns a new official OpenBao client authenticated with the root token.
+// Client returns a new official OpenBao client pointed at the in-memory server.
 func (s *Server) Client() *api.Client {
 	s.t.Helper()
 	cfg := api.DefaultConfig()
 	cfg.Address = "http://openbao.invalid"
-	cfg.HttpClient = rtfake.Client(s.handler)
+	cfg.HttpClient = rtfake.Client(s.kv)
 	cfg.MaxRetries = 0
 	c, err := api.NewClient(cfg)
 	if err != nil {
 		s.t.Fatalf("openbaotest: new client: %v", err)
 	}
-	c.SetToken(s.token)
+	c.SetToken(token)
 	return c
 }
 
-// Token is the root token.
-func (s *Server) Token() string { return s.token }
+// Token is the token the client is configured with (any token is accepted).
+func (s *Server) Token() string { return token }

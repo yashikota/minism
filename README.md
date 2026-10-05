@@ -16,13 +16,13 @@ of silently succeeding.
 
 ## Providers
 
-Rule: use the upstream implementation if one exists; otherwise a real client plus the
+Rule: use an upstream-provided implementation if one exists (only Azure does); otherwise a real client plus the
 SDK's own test seam; write server-side state only when upstream has none.
 
 | Module | Real client | Backend | Own code |
 |---|---|---|---|
-| `vaulttest` | `vault/api` | **real Vault core** + real KV, `inmem` storage, real HTTP handler | none |
-| `openbaotest` | `openbao/api/v2` | **real OpenBao core** + real KV via a shim module | none |
+| `vaulttest` | `vault/api` | `kvfake` (KV v1/v2, sys/mounts) | wire protocol, shared |
+| `openbaotest` | `openbao/api/v2` | `kvfake`, same handler | wire protocol, shared |
 | `azsecretstest` | `azsecrets.Client` | Microsoft's `azsecrets/fake` | state |
 | `awssmtest` | `secretsmanager.Client` | `aws.Config.HTTPClient` | AWS JSON endpoint |
 | `gcpsmtest` | `secretmanager.Client` | bufconn + generated `SecretManagerServiceServer` | state |
@@ -34,22 +34,19 @@ SDK's own test seam; write server-side state only when upstream has none.
 | `cfsecretstest` | `cloudflare.Client` | `option.WithHTTPClient` | REST endpoint |
 | `keepertest` | `core.SecretsManager` | SDK's test-only `Context.Transport` | encrypted endpoint |
 
-Shared internals (`internal/memstore`, `internal/rtfake`) live in the root module.
+Shared internals (`internal/memstore`, `internal/rtfake`, `internal/kvfake`) live in the root module.
 
-## Things that differ from the original plan
+## Notes on design choices
 
-- **Vault** has no `InmemNetworkListener` (v1.21.4 still uses `net.ListenTCP`). `vaulttest`
-  boots `vault.TestCoreUnsealedWithConfig` and serves the real handler through a
-  RoundTripper instead, which needs no socket and no temp dir.
-- **OpenBao** is `package main` plus `internal/`, so `//go:linkname` has nothing to link
-  against. Go decides `internal` visibility from the importer's *import path only*, so
-  `openbaotest/shim` is declared as `github.com/openbao/openbao/v2/shim` and imports the
-  internals directly. No linkname, no `unsafe`.
-- **Vault and OpenBao** modules cannot be built from tagged versions alone (their `go.mod`s
-  use `replace` for their own `sdk`/`api`, which does not propagate). Their READMEs list
-  the `replace` lines a consumer must copy.
+- **Vault / OpenBao are not run for real.** Their cores cannot be imported cleanly (their
+  `go.mod`s use `replace` for their own `sdk`/`api`, which does not propagate, so every
+  consumer would have to copy `replace` lines), and OpenBao is `package main` plus
+  `internal/`. We use the lightweight official `api` clients against a small KV
+  implementation of the shared wire protocol instead (`internal/kvfake`).
 - **azsecrets/fake v1.5.0** mis-parses `/secrets/{name}/{version}` (a `$-;` character range
   swallows `/`). `azsecretstest` splits the name again; it is a no-op once upstream is fixed.
+- Anything a fake does not implement fails with `minism: <provider> <op> not implemented`
+  rather than silently succeeding.
 
 ## Development
 

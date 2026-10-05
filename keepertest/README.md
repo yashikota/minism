@@ -13,6 +13,8 @@ that because the SDK has a test-only hook: `NewSecretsManager` accepts a `**core
 go get github.com/yashikota/minism/keepertest
 ```
 
+Not tagged yet, so `go get` will not resolve for now: see [Adding it to your project today](../README.md#adding-it-to-your-project-today).
+
 ## Usage
 
 ```go

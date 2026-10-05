@@ -5,17 +5,7 @@ Test doubles for secret managers, for Go. Your code under test keeps using the
 in-memory server. No network, no Docker, no external process, nothing to clean up.
 
 ```go
-func TestLoadsDBPassword(t *testing.T) {
-    srv := awssmtest.New(t)                  // in-memory AWS Secrets Manager
-    client := srv.Client()                   // a real *secretsmanager.Client
-
-    client.CreateSecret(ctx, &secretsmanager.CreateSecretInput{
-        Name: aws.String("prod/db"), SecretString: aws.String("s3cret"),
-    })
-
-    got := LoadDBPassword(ctx, client)       // your code, unchanged
-    if got != "s3cret" { t.Fatal(got) }
-}
+client := awssmtest.New(t).Client() // a real *secretsmanager.Client, backed by memory
 ```
 
 Because the client is the real one, request building, signing, retries, error types and
@@ -38,14 +28,106 @@ pagination in your code are exercised for real. Only the server is fake.
 | Cloudflare Secrets Store | `cfsecretstest` | `*cloudflare.Client` | our in-memory endpoint | [cfsecretstest](cfsecretstest/README.md) |
 | Keeper Secrets Manager | `keepertest` | `*core.SecretsManager` | our in-memory encrypted endpoint | [keepertest](keepertest/README.md) |
 
-Each provider is a separate Go module, so depending on one pulls in only that provider's SDK:
+Each provider is a separate Go module, so depending on one pulls in only that provider's SDK.
+The package name is the last path segment (`awssmtest`, `gcpsmtest`, ...).
+
+## Using it
+
+The pattern is the same for every provider. Make your code depend on a small interface (or on the
+SDK client type), then give it the minism client in tests.
+
+**Your code** (`app.go`): nothing minism-specific.
+
+```go
+package myapp
+
+import (
+    "context"
+
+    "github.com/aws/aws-sdk-go-v2/aws"
+    "github.com/aws/aws-sdk-go-v2/service/secretsmanager"
+)
+
+// The slice of the AWS client this app uses. *secretsmanager.Client satisfies it.
+type SecretsAPI interface {
+    GetSecretValue(ctx context.Context, in *secretsmanager.GetSecretValueInput,
+        opts ...func(*secretsmanager.Options)) (*secretsmanager.GetSecretValueOutput, error)
+}
+
+func LoadDBPassword(ctx context.Context, c SecretsAPI) (string, error) {
+    out, err := c.GetSecretValue(ctx, &secretsmanager.GetSecretValueInput{SecretId: aws.String("prod/db")})
+    if err != nil {
+        return "", err
+    }
+    return aws.ToString(out.SecretString), nil
+}
+```
+
+**Your test** (`app_test.go`): create what the code expects, then run the code.
+
+```go
+package myapp_test
+
+import (
+    "context"
+    "testing"
+
+    "github.com/aws/aws-sdk-go-v2/aws"
+    "github.com/aws/aws-sdk-go-v2/service/secretsmanager"
+    "github.com/yashikota/minism/awssmtest"
+
+    myapp "example.com/myapp"
+)
+
+func TestLoadDBPassword(t *testing.T) {
+    ctx := context.Background()
+    client := awssmtest.New(t).Client() // fresh in-memory AWS Secrets Manager
+
+    _, err := client.CreateSecret(ctx, &secretsmanager.CreateSecretInput{
+        Name: aws.String("prod/db"), SecretString: aws.String("s3cret"),
+    })
+    if err != nil {
+        t.Fatal(err)
+    }
+
+    got, err := myapp.LoadDBPassword(ctx, client)
+    if err != nil || got != "s3cret" {
+        t.Fatalf("got %q, %v", got, err)
+    }
+}
+
+func TestMissingSecret(t *testing.T) {
+    // An empty server: the real client returns a real ResourceNotFoundException.
+    if _, err := myapp.LoadDBPassword(context.Background(), awssmtest.New(t).Client()); err == nil {
+        t.Fatal("expected an error")
+    }
+}
+```
+
+That is the whole recipe: `New(t)` for a fresh server, `.Client()` for the official client,
+then create the state you need through the SDK itself. Other providers work the same way;
+their READMEs have the equivalent snippet.
+
+### Adding it to your project today
+
+Modules are not tagged yet, so `go get` cannot resolve them. Until they are, clone this repo and
+point your `go.mod` at it (this setup is tested):
 
 ```
-go get github.com/yashikota/minism/awssmtest
+git clone https://github.com/yashikota/minism ../minism
 ```
 
-> **Status: pre-release.** Modules are not tagged yet, so `go get` will not resolve until they
-> are. Until then, clone the repo and use the `go.work` workspace.
+```
+// go.mod of your project
+require github.com/yashikota/minism/awssmtest v0.0.0
+
+replace github.com/yashikota/minism/awssmtest => ../minism/awssmtest
+replace github.com/yashikota/minism          => ../minism
+```
+
+Then `go mod tidy`. Use one `replace` line per provider you import, plus the last line (the shared
+root module) once. Once the modules are tagged you will instead run
+`go get github.com/yashikota/minism/awssmtest`.
 
 ## What "fake" means here
 

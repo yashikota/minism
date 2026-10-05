@@ -14,6 +14,8 @@ no auth, policy, lease, seal or any other engine. The same server backs
 go get github.com/yashikota/minism/vaulttest
 ```
 
+Not tagged yet, so `go get` will not resolve for now: see [Adding it to your project today](../README.md#adding-it-to-your-project-today).
+
 ## Usage
 
 ```go

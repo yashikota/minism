@@ -9,6 +9,8 @@ In-memory **IBM Cloud Secrets Manager** for tests. `Client()` returns a real
 go get github.com/yashikota/minism/ibmsmtest
 ```
 
+Not tagged yet, so `go get` will not resolve for now: see [Adding it to your project today](../README.md#adding-it-to-your-project-today).
+
 ## Usage
 
 ```go

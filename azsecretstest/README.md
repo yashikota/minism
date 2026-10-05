@@ -10,6 +10,8 @@ Microsoft; this package only supplies the in-memory store behind it.
 go get github.com/yashikota/minism/azsecretstest
 ```
 
+Not tagged yet, so `go get` will not resolve for now: see [Adding it to your project today](../README.md#adding-it-to-your-project-today).
+
 ## Usage
 
 ```go

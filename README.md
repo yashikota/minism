@@ -23,26 +23,23 @@ pagination in your code are exercised for real. Only the server is fake.
 
 ## Pick your provider
 
-| Provider | Import | You get | Backend | README |
+| Provider | Install | You get | Backend | README |
 |---|---|---|---|---|
-| AWS Secrets Manager | `awssmtest` | `*secretsmanager.Client` | our in-memory endpoint | [awssmtest](awssmtest/README.md) |
-| Google Secret Manager | `gcpsmtest` | `*secretmanager.Client` | our in-memory gRPC server | [gcpsmtest](gcpsmtest/README.md) |
-| Azure Key Vault (secrets) | `azsecretstest` | `*azsecrets.Client` | Microsoft's own `azsecrets/fake` | [azsecretstest](azsecretstest/README.md) |
-| HashiCorp Vault | `vaulttest` | `*api.Client` | our in-memory KV server | [vaulttest](vaulttest/README.md) |
-| OpenBao | `openbaotest` | `*api.Client` | same KV server as Vault | [openbaotest](openbaotest/README.md) |
-| 1Password | `onepasswordtest` | `*onepassword.Client` | in-memory APIs injected into the client | [onepasswordtest](onepasswordtest/README.md) |
-| Infisical | `infisicaltest` | `infisical.InfisicalClientInterface` | in-memory implementation of the SDK interfaces | [infisicaltest](infisicaltest/README.md) |
-| OCI Vault | `ocisecretstest` | `VaultsClient` + `SecretsClient` | our in-memory endpoint | [ocisecretstest](ocisecretstest/README.md) |
-| IBM Cloud Secrets Manager | `ibmsmtest` | `*SecretsManagerV2` | our in-memory endpoint | [ibmsmtest](ibmsmtest/README.md) |
-| Akeyless | `akeylesstest` | `*akeyless.V2ApiService` | our in-memory endpoint | [akeylesstest](akeylesstest/README.md) |
-| Cloudflare Secrets Store | `cfsecretstest` | `*cloudflare.Client` | our in-memory endpoint | [cfsecretstest](cfsecretstest/README.md) |
-| Keeper Secrets Manager | `keepertest` | `*core.SecretsManager` | our in-memory encrypted endpoint | [keepertest](keepertest/README.md) |
+| AWS Secrets Manager | `go get github.com/yashikota/minism/awssmtest` | `*secretsmanager.Client` | our in-memory endpoint | [awssmtest](awssmtest/README.md) |
+| Google Secret Manager | `go get github.com/yashikota/minism/gcpsmtest` | `*secretmanager.Client` | our in-memory gRPC server | [gcpsmtest](gcpsmtest/README.md) |
+| Azure Key Vault (secrets) | `go get github.com/yashikota/minism/azsecretstest` | `*azsecrets.Client` | Microsoft's own `azsecrets/fake` | [azsecretstest](azsecretstest/README.md) |
+| HashiCorp Vault | `go get github.com/yashikota/minism/vaulttest` | `*api.Client` | our in-memory KV server | [vaulttest](vaulttest/README.md) |
+| OpenBao | `go get github.com/yashikota/minism/openbaotest` | `*api.Client` | same KV server as Vault | [openbaotest](openbaotest/README.md) |
+| 1Password | `go get github.com/yashikota/minism/onepasswordtest` | `*onepassword.Client` | in-memory APIs injected into the client | [onepasswordtest](onepasswordtest/README.md) |
+| Infisical | `go get github.com/yashikota/minism/infisicaltest` | `infisical.InfisicalClientInterface` | in-memory implementation of the SDK interfaces | [infisicaltest](infisicaltest/README.md) |
+| OCI Vault | `go get github.com/yashikota/minism/ocisecretstest` | `VaultsClient` + `SecretsClient` | our in-memory endpoint | [ocisecretstest](ocisecretstest/README.md) |
+| IBM Cloud Secrets Manager | `go get github.com/yashikota/minism/ibmsmtest` | `*SecretsManagerV2` | our in-memory endpoint | [ibmsmtest](ibmsmtest/README.md) |
+| Akeyless | `go get github.com/yashikota/minism/akeylesstest` | `*akeyless.V2ApiService` | our in-memory endpoint | [akeylesstest](akeylesstest/README.md) |
+| Cloudflare Secrets Store | `go get github.com/yashikota/minism/cfsecretstest` | `*cloudflare.Client` | our in-memory endpoint | [cfsecretstest](cfsecretstest/README.md) |
+| Keeper Secrets Manager | `go get github.com/yashikota/minism/keepertest` | `*core.SecretsManager` | our in-memory encrypted endpoint | [keepertest](keepertest/README.md) |
 
-Each provider is a separate Go module, so depending on one pulls in only that provider's SDK:
-
-```
-go get github.com/yashikota/minism/awssmtest
-```
+Each provider is a separate Go module, so depending on one pulls in only that provider's SDK.
+The package name is the last path segment (`awssmtest`, `gcpsmtest`, ...).
 
 > **Status: pre-release.** Modules are not tagged yet, so `go get` will not resolve until they
 > are. Until then, clone the repo and use the `go.work` workspace.

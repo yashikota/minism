@@ -1,60 +1,98 @@
 # minism
 
-In-memory secret-manager providers for Go tests. Each package hands back the **real
-official client** (or the SDK's own client interface) wired to an in-memory backend: no
-network, no listener, no external process. CI runs every module inside a network
-namespace with no route out to prove it.
+Test doubles for secret managers, for Go. Your code under test keeps using the
+**real official SDK client**; minism swaps what is on the other end of the wire for an
+in-memory server. No network, no Docker, no external process, nothing to clean up.
 
 ```go
-c := awssmtest.New(t).Client() // *secretsmanager.Client, the real one
+func TestLoadsDBPassword(t *testing.T) {
+    srv := awssmtest.New(t)                  // in-memory AWS Secrets Manager
+    client := srv.Client()                   // a real *secretsmanager.Client
+
+    client.CreateSecret(ctx, &secretsmanager.CreateSecretInput{
+        Name: aws.String("prod/db"), SecretString: aws.String("s3cret"),
+    })
+
+    got := LoadDBPassword(ctx, client)       // your code, unchanged
+    if got != "s3cret" { t.Fatal(got) }
+}
 ```
 
-Every package has the same shape: `New(t)`, `Client()` (or `Env()` for OCI), plus
-fixture helpers (`Value`, `Seed`, ...) that are *not* part of the provider contract.
-Unsupported operations fail loudly (`minism: <provider> <op> not implemented`) instead
-of silently succeeding.
+Because the client is the real one, request building, signing, retries, error types and
+pagination in your code are exercised for real. Only the server is fake.
 
-## Providers
+## Pick your provider
 
-Rule: use an upstream-provided implementation if one exists (only Azure does); otherwise a real client plus the
-SDK's own test seam; write server-side state only when upstream has none.
+| Provider | Import | You get | Backend | README |
+|---|---|---|---|---|
+| AWS Secrets Manager | `awssmtest` | `*secretsmanager.Client` | our in-memory endpoint | [awssmtest](awssmtest/README.md) |
+| Google Secret Manager | `gcpsmtest` | `*secretmanager.Client` | our in-memory gRPC server | [gcpsmtest](gcpsmtest/README.md) |
+| Azure Key Vault (secrets) | `azsecretstest` | `*azsecrets.Client` | Microsoft's own `azsecrets/fake` | [azsecretstest](azsecretstest/README.md) |
+| HashiCorp Vault | `vaulttest` | `*api.Client` | our in-memory KV server | [vaulttest](vaulttest/README.md) |
+| OpenBao | `openbaotest` | `*api.Client` | same KV server as Vault | [openbaotest](openbaotest/README.md) |
+| 1Password | `onepasswordtest` | `*onepassword.Client` | in-memory APIs injected into the client | [onepasswordtest](onepasswordtest/README.md) |
+| Infisical | `infisicaltest` | `infisical.InfisicalClientInterface` | in-memory implementation of the SDK interfaces | [infisicaltest](infisicaltest/README.md) |
+| OCI Vault | `ocisecretstest` | `VaultsClient` + `SecretsClient` | our in-memory endpoint | [ocisecretstest](ocisecretstest/README.md) |
+| IBM Cloud Secrets Manager | `ibmsmtest` | `*SecretsManagerV2` | our in-memory endpoint | [ibmsmtest](ibmsmtest/README.md) |
+| Akeyless | `akeylesstest` | `*akeyless.V2ApiService` | our in-memory endpoint | [akeylesstest](akeylesstest/README.md) |
+| Cloudflare Secrets Store | `cfsecretstest` | `*cloudflare.Client` | our in-memory endpoint | [cfsecretstest](cfsecretstest/README.md) |
+| Keeper Secrets Manager | `keepertest` | `*core.SecretsManager` | our in-memory encrypted endpoint | [keepertest](keepertest/README.md) |
 
-| Module | Real client | Backend | Own code |
-|---|---|---|---|
-| `vaulttest` | `vault/api` | `kvfake` (KV v1/v2, sys/mounts) | wire protocol, shared |
-| `openbaotest` | `openbao/api/v2` | `kvfake`, same handler | wire protocol, shared |
-| `azsecretstest` | `azsecrets.Client` | Microsoft's `azsecrets/fake` | state |
-| `awssmtest` | `secretsmanager.Client` | `aws.Config.HTTPClient` | AWS JSON endpoint |
-| `gcpsmtest` | `secretmanager.Client` | bufconn + generated `SecretManagerServiceServer` | state |
-| `onepasswordtest` | `onepassword.Client` | exported `ItemsAPI`/`VaultsAPI`/`SecretsAPI` fields | state |
-| `infisicaltest` | `InfisicalClientInterface` | SDK's own interfaces | state |
-| `ocisecretstest` | `vault.VaultsClient` + `secrets.SecretsClient` | `HTTPRequestDispatcher` | REST endpoint |
-| `ibmsmtest` | `SecretsManagerV2` | `SetHTTPClient` | REST endpoint |
-| `akeylesstest` | `akeyless.V2ApiService` | `Configuration.HTTPClient` | RPC endpoint |
-| `cfsecretstest` | `cloudflare.Client` | `option.WithHTTPClient` | REST endpoint |
-| `keepertest` | `core.SecretsManager` | SDK's test-only `Context.Transport` | encrypted endpoint |
+Each provider is a separate Go module, so depending on one pulls in only that provider's SDK:
 
-Shared internals (`internal/memstore`, `internal/rtfake`, `internal/kvfake`) live in the root module.
+```
+go get github.com/yashikota/minism/awssmtest
+```
 
-## Notes on design choices
+> **Status: pre-release.** Modules are not tagged yet, so `go get` will not resolve until they
+> are. Until then, clone the repo and use the `go.work` workspace.
 
-- **Vault / OpenBao are not run for real.** Their cores cannot be imported cleanly (their
-  `go.mod`s use `replace` for their own `sdk`/`api`, which does not propagate, so every
-  consumer would have to copy `replace` lines), and OpenBao is `package main` plus
-  `internal/`. We use the lightweight official `api` clients against a small KV
-  implementation of the shared wire protocol instead (`internal/kvfake`).
-- **azsecrets/fake v1.5.0** mis-parses `/secrets/{name}/{version}` (a `$-;` character range
-  swallows `/`). `azsecretstest` splits the name again; it is a no-op once upstream is fixed.
-- Anything a fake does not implement fails with `minism: <provider> <op> not implemented`
-  rather than silently succeeding.
+## What "fake" means here
+
+These are **not** the real services and do not try to be. Each one implements the common
+operations tests need (create / read / update / delete / list / versions) and nothing else.
+No IAM, no rotation, no replication, no KMS, no quotas.
+
+- **Unsupported operations fail loudly.** You get an error saying
+  `minism: <provider> <operation> not implemented` (or the SDK's own "not implemented" error)
+  instead of a silent success. If you hit one, that is a gap to fill, not a bug in your code.
+- **Authentication is not checked.** Any credentials or token are accepted.
+- **Each `New(t)` is a fresh, isolated server.** State is not shared between tests, and it is
+  discarded with the test.
+- **Fixture helpers** such as `Value(...)` or `Seed(...)` let a test look at or preload the
+  server's state directly. They are *not* part of the provider's API; use them for setup and
+  assertions only.
+
+Every provider README lists exactly what is supported and what is not.
+
+## How it works
+
+```
+your code ──► real SDK client ──► minism transport ──► in-memory server
+              (signing, retries,   (a RoundTripper,       (a small state machine
+               error types)         bufconn, or the        per provider)
+                                    SDK's own test seam)
+```
+
+How the client is redirected depends on what each SDK offers: an injectable
+`http.Client` (AWS, IBM, OCI, Akeyless, Cloudflare, Vault, OpenBao), a gRPC connection (GCP),
+a vendor-provided fake (Azure), exported API fields (1Password), public interfaces (Infisical),
+or a test-only transport hook (Keeper). Nothing opens a socket; CI runs every module inside a
+network namespace with no route out to prove it.
 
 ## Development
 
-Each provider is its own Go module (so depending on one does not pull in the others).
-`go.work` ties them together locally; CI builds each module standalone with `GOWORK=off`,
-vets it, pre-fetches dependencies, then runs the tests with the network cut off
+Shared code lives in the root module under `internal/`: `memstore` (versioned in-memory
+store), `rtfake` (turns an `http.Handler` into a `RoundTripper`) and `kvfake` (the
+Vault-compatible KV protocol shared by `vaulttest` and `openbaotest`).
+
+`go.work` ties the modules together locally. CI builds each module standalone
+(`GOWORK=off`), vets it, pre-fetches dependencies, then runs its tests with the network cut off
 (`unshare --net`, `GOPROXY=off`).
 
 ```
 for d in $(find . -name go.mod -exec dirname {} \;); do (cd $d && GOWORK=off go test -race ./...); done
 ```
+
+One known upstream bug is worked around: `azsecrets/fake` v1.5.0 mis-parses
+`/secrets/{name}/{version}`; see [azsecretstest](azsecretstest/README.md).

@@ -1,6 +1,6 @@
 module github.com/yashikota/minism/onepasswordtest
 
-go 1.27.1
+go 1.24.0
 
 replace github.com/yashikota/minism => ../
 

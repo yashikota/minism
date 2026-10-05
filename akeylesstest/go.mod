@@ -1,6 +1,6 @@
 module github.com/yashikota/minism/akeylesstest
 
-go 1.27.1
+go 1.26
 
 replace github.com/yashikota/minism => ../
 

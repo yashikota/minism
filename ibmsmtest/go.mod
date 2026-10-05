@@ -1,6 +1,6 @@
 module github.com/yashikota/minism/ibmsmtest
 
-go 1.27.1
+go 1.26.0
 
 replace github.com/yashikota/minism => ../
 

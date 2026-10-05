@@ -9,6 +9,7 @@ use (
 	./gcpsmtest
 	./ibmsmtest
 	./infisicaltest
+	./keepertest
 	./ocisecretstest
 	./onepasswordtest
 	./openbaotest

@@ -1,6 +1,6 @@
 module github.com/yashikota/minism/ibmsmtest
 
-go 1.26.0
+go 1.26.10
 
 require (
 	github.com/IBM/go-sdk-core/v5 v5.24.0

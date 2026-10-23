@@ -37,7 +37,6 @@ type item struct {
 
 // Server is an in-memory Akeyless gateway.
 type Server struct {
-	t     testing.TB
 	mu    sync.Mutex
 	items map[string]*item // by normalized name
 	seq   int64
@@ -48,7 +47,7 @@ type Server struct {
 // New returns an empty gateway.
 func New(t testing.TB) *Server {
 	t.Helper()
-	s := &Server{t: t, items: map[string]*item{}, now: func() time.Time { return time.Now().UTC() }}
+	s := &Server{items: map[string]*item{}, now: func() time.Time { return time.Now().UTC() }}
 	m := http.NewServeMux()
 	m.HandleFunc("POST /auth", s.auth)
 	m.HandleFunc("POST /create-secret", s.createSecret)

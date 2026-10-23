@@ -1,6 +1,6 @@
 module github.com/yashikota/minism/openbaotest
 
-go 1.25.0
+go 1.26.10
 
 require (
 	github.com/openbao/openbao/api/v2 v2.7.1

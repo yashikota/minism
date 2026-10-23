@@ -43,7 +43,7 @@ Secrets are addressed by project + environment + path + key. Errors are the SDK'
 
 ## Not supported
 
-- **`DynamicSecrets()`, `Kms()` and `Ssh()` panic** if used.
+- `DynamicSecrets()`, `Kms()` and `Ssh()` return an `*infisical.APIError` (status 501, "not implemented").
 - Secret imports, tags, metadata, `IfNoneMatch` (ignored), secret references expansion.
 
 ## Test helpers (not part of the Infisical API)

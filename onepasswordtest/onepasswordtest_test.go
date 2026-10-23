@@ -99,3 +99,13 @@ func TestVaults(t *testing.T) {
 		t.Fatalf("want ErrNotFound, got %v", err)
 	}
 }
+
+func TestEnvironmentsAndGroupsReturnError(t *testing.T) {
+	c := onepasswordtest.New(t).Client()
+	if _, err := c.EnvironmentsAPI.GetVariables(context.Background(), "env"); err == nil {
+		t.Fatal("Environments.GetVariables must not silently succeed")
+	}
+	if _, err := c.GroupsAPI.Get(context.Background(), "g", onepassword.GroupGetParams{}); err == nil {
+		t.Fatal("Groups.Get must not silently succeed")
+	}
+}

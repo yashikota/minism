@@ -4,7 +4,8 @@
 // public interfaces are the supported seam.
 //
 // Secrets and Folders are implemented; Auth is a permissive fake. DynamicSecrets,
-// Kms and Ssh are not implemented and panic if used.
+// Kms and Ssh are not implemented: every call returns an *infisical.APIError
+// with status 501 and a "minism: infisical <operation> not implemented" message.
 package infisicaltest
 
 import (
@@ -85,12 +86,6 @@ func (c *client) Auth() infisical.AuthInterface                     { return c.a
 func (c *client) DynamicSecrets() infisical.DynamicSecretsInterface { return unimplementedDynamic{} }
 func (c *client) Kms() infisical.KmsInterface                       { return unimplementedKms{} }
 func (c *client) Ssh() infisical.SshInterface                       { return unimplementedSsh{} }
-
-type unimplementedDynamic struct {
-	infisical.DynamicSecretsInterface
-}
-type unimplementedKms struct{ infisical.KmsInterface }
-type unimplementedSsh struct{ infisical.SshInterface }
 
 // ---- secrets ----
 

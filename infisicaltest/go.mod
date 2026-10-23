@@ -1,6 +1,6 @@
 module github.com/yashikota/minism/infisicaltest
 
-go 1.25.0
+go 1.26.10
 
 require (
 	github.com/infisical/go-sdk v0.8.0

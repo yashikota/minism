@@ -67,6 +67,7 @@ what it supports, what it does not, and a runnable snippet.
 - **Unsupported calls fail loudly.** You get `minism: <provider> <operation> not implemented`, never a silent success.
 - **No auth check.** Any credentials or token work.
 - **Fresh server per `New(t)`.** Nothing is shared between tests; it is discarded when the test ends.
+- **Go 1.26.10 or newer.** Every module requires it.
 - **`Value(...)` and `Seed(...)` are test helpers**, not part of the provider's API. Use them to set up and assert only.
 - **These are not the real services.** They cover create / read / update / delete / list / versions. No IAM, rotation, replication or KMS.
 

@@ -1,6 +1,6 @@
 module github.com/yashikota/minism/ocisecretstest
 
-go 1.25.0
+go 1.26.10
 
 require (
 	github.com/oracle/oci-go-sdk/v65 v65.126.1

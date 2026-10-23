@@ -1,6 +1,6 @@
 module github.com/yashikota/minism/cfsecretstest
 
-go 1.25.0
+go 1.26.10
 
 require (
 	github.com/cloudflare/cloudflare-go/v6 v6.10.0

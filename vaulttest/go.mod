@@ -1,6 +1,6 @@
 module github.com/yashikota/minism/vaulttest
 
-go 1.25.0
+go 1.26.10
 
 require (
 	github.com/hashicorp/vault/api v1.23.0

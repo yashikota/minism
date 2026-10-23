@@ -1,6 +1,6 @@
 module github.com/yashikota/minism/keepertest
 
-go 1.25.0
+go 1.26.10
 
 require (
 	github.com/keeper-security/secrets-manager-go/core v1.7.0

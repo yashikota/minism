@@ -1,6 +1,6 @@
 module github.com/yashikota/minism/onepasswordtest
 
-go 1.25.0
+go 1.26.10
 
 require github.com/1password/onepassword-sdk-go v0.4.1
 

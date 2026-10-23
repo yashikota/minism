@@ -45,7 +45,7 @@ pw, _ := c.Secrets().Resolve(ctx, "op://Prod/db/password") // "one"
 
 - `Items().Shares()` and `Items().Files()` return an "not implemented" error.
 - Group permission methods on `Vaults()` return an error.
-- **`Environments()` and `Groups()` are `nil`**: calling methods on them panics.
+- `Environments()` and `Groups()` return an "not implemented" error.
 - `?attribute=` suffixes on secret references are ignored.
 
 ## Test helpers (not part of the 1Password API)

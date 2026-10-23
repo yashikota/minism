@@ -198,14 +198,16 @@ func (s *Server) kv1(w http.ResponseWriter, r *http.Request, m *mount, path stri
 }
 
 // list returns the immediate children under dir; sub-directories end in "/".
+// Like Vault, a kv-v2 key is listed as long as its metadata exists, even when
+// every version is deleted or destroyed or none was ever written.
 func (m *mount) list(_, dir string) []string {
 	prefix := ""
 	if dir != "" {
 		prefix = dir + "/"
 	}
 	seen := map[string]bool{}
-	for k, e := range m.entries {
-		if !strings.HasPrefix(k, prefix) || (e.v1 == nil && e.live() == nil) {
+	for k := range m.entries {
+		if !strings.HasPrefix(k, prefix) {
 			continue
 		}
 		child := strings.TrimPrefix(k, prefix)
@@ -223,14 +225,6 @@ func (m *mount) list(_, dir string) []string {
 }
 
 // ---- kv v2 ----
-
-// live is the newest version that has not been deleted or destroyed, or nil.
-func (e *entry) live() *version {
-	if len(e.versions) == 0 {
-		return nil
-	}
-	return e.versions[len(e.versions)-1]
-}
 
 func (v *version) meta(n int) map[string]any {
 	del := ""

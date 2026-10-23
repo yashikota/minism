@@ -3,7 +3,9 @@ package awssmtest_test
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
@@ -87,5 +89,47 @@ func TestBinaryAndUnimplemented(t *testing.T) {
 	}
 	if _, err := c.RotateSecret(ctx, &secretsmanager.RotateSecretInput{SecretId: aws.String("bin")}); err == nil {
 		t.Fatal("RotateSecret must not silently succeed")
+	}
+}
+
+func TestDeleteSchedule(t *testing.T) {
+	ctx := context.Background()
+	c := awssmtest.New(t).Client()
+	created, err := c.CreateSecret(ctx, &secretsmanager.CreateSecretInput{Name: aws.String("app/key"), SecretString: aws.String("v")})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// The ARN without its random suffix is accepted as a SecretId.
+	partial := (*created.ARN)[:strings.LastIndexByte(*created.ARN, '-')]
+	if _, err := c.GetSecretValue(ctx, &secretsmanager.GetSecretValueInput{SecretId: aws.String(partial)}); err != nil {
+		t.Fatalf("partial ARN: %v", err)
+	}
+
+	var param *types.InvalidParameterException
+	if _, err := c.DeleteSecret(ctx, &secretsmanager.DeleteSecretInput{SecretId: aws.String("app/key"), RecoveryWindowInDays: aws.Int64(3)}); !errors.As(err, &param) {
+		t.Fatalf("window 3: want InvalidParameterException, got %v", err)
+	}
+	if _, err := c.DeleteSecret(ctx, &secretsmanager.DeleteSecretInput{
+		SecretId: aws.String("app/key"), RecoveryWindowInDays: aws.Int64(7), ForceDeleteWithoutRecovery: aws.Bool(true),
+	}); !errors.As(err, &param) {
+		t.Fatalf("force + window: want InvalidParameterException, got %v", err)
+	}
+
+	before := time.Now()
+	del, err := c.DeleteSecret(ctx, &secretsmanager.DeleteSecretInput{SecretId: aws.String("app/key"), RecoveryWindowInDays: aws.Int64(7)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// DeletionDate is when the secret will be purged, not when the call was made.
+	if want := before.AddDate(0, 0, 7); del.DeletionDate.Before(want.Add(-time.Minute)) || del.DeletionDate.After(want.Add(time.Minute)) {
+		t.Fatalf("DeletionDate = %v, want about %v", del.DeletionDate, want)
+	}
+	var invalid *types.InvalidRequestException
+	if _, err := c.DeleteSecret(ctx, &secretsmanager.DeleteSecretInput{SecretId: aws.String("app/key")}); !errors.As(err, &invalid) {
+		t.Fatalf("second delete: want InvalidRequestException, got %v", err)
+	}
+	if _, err := c.DeleteSecret(ctx, &secretsmanager.DeleteSecretInput{SecretId: aws.String("app/key"), ForceDeleteWithoutRecovery: aws.Bool(true)}); err != nil {
+		t.Fatalf("force delete of a scheduled secret: %v", err)
 	}
 }

@@ -47,10 +47,26 @@ func New(t testing.TB) *Server {
 // Client returns a real onepassword.Client backed by this account.
 func (s *Server) Client() *onepassword.Client {
 	return &onepassword.Client{
-		ItemsAPI:   &items{s},
-		VaultsAPI:  &vaults{s},
-		SecretsAPI: &secrets{s},
+		ItemsAPI:        &items{s},
+		VaultsAPI:       &vaults{s},
+		SecretsAPI:      &secrets{s},
+		EnvironmentsAPI: unimplementedEnvironments{},
+		GroupsAPI:       unimplementedGroups{},
 	}
+}
+
+// Environments and Groups are not implemented; they return errUnimplemented
+// rather than leaving nil fields that would panic.
+type unimplementedEnvironments struct{}
+
+func (unimplementedEnvironments) GetVariables(context.Context, string) (onepassword.GetVariablesResponse, error) {
+	return onepassword.GetVariablesResponse{}, errUnimplemented
+}
+
+type unimplementedGroups struct{}
+
+func (unimplementedGroups) Get(context.Context, string, onepassword.GroupGetParams) (onepassword.Group, error) {
+	return onepassword.Group{}, errUnimplemented
 }
 
 // AddVault is a fixture helper returning the new vault's ID.

@@ -94,7 +94,7 @@ func (s *Server) Value(secret string) ([]byte, bool) {
 	}
 	for i := len(sec.versions) - 1; i >= 0; i-- {
 		if v := sec.versions[i]; v.state == secretmanagerpb.SecretVersion_ENABLED {
-			return v.data, true
+			return append([]byte(nil), v.data...), true
 		}
 	}
 	return nil, false

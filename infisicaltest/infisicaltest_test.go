@@ -3,6 +3,7 @@ package infisicaltest_test
 import (
 	"errors"
 	"net/http"
+	"strings"
 	"testing"
 
 	infisical "github.com/infisical/go-sdk"
@@ -75,5 +76,20 @@ func TestFoldersAndAuth(t *testing.T) {
 	cred, err := c.Auth().UniversalAuthLogin("id", "secret")
 	if err != nil || cred.AccessToken == "" || c.Auth().GetAccessToken() != cred.AccessToken {
 		t.Fatalf("login = %+v, %v", cred, err)
+	}
+}
+
+func TestUnimplementedReturnsError(t *testing.T) {
+	c := infisicaltest.New(t).Client()
+	_, err := c.Kms().EncryptData(infisical.KmsEncryptDataOptions{})
+	var apiErr *infisical.APIError
+	if !errors.As(err, &apiErr) || apiErr.StatusCode != http.StatusNotImplemented || !strings.Contains(err.Error(), "not implemented") {
+		t.Fatalf("Kms.EncryptData = %v", err)
+	}
+	if _, err := c.DynamicSecrets().Leases().List(infisical.ListDynamicSecretLeasesOptions{}); err == nil {
+		t.Fatal("DynamicSecrets.Leases.List must not silently succeed")
+	}
+	if _, err := c.Ssh().GetSshHosts(infisical.GetSshHostsOptions{}); err == nil {
+		t.Fatal("Ssh.GetSshHosts must not silently succeed")
 	}
 }

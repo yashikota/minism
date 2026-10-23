@@ -85,3 +85,15 @@ func TestListMountsAndV1(t *testing.T) {
 		t.Fatalf("unsupported type = %d", st)
 	}
 }
+
+func TestListIncludesMetadataOnlyKeys(t *testing.T) {
+	c := rtfake.Client(kvfake.New())
+	do(t, c, "POST", "secret/metadata/reserved", `{"custom_metadata":{"owner":"team"}}`)
+	do(t, c, "POST", "secret/data/gone", `{"data":{"k":"v"}}`)
+	do(t, c, "POST", "secret/destroy/gone", `{"versions":[1]}`)
+	_, out := do(t, c, "GET", "secret/metadata/?list=true", "")
+	keys := out["data"].(map[string]any)["keys"].([]any)
+	if len(keys) != 2 || keys[0] != "gone" || keys[1] != "reserved" {
+		t.Fatalf("keys = %v", keys)
+	}
+}

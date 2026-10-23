@@ -1,6 +1,6 @@
 module github.com/yashikota/minism/akeylesstest
 
-go 1.26
+go 1.26.0
 
 require (
 	github.com/akeylesslabs/akeyless-go/v5 v5.0.38

@@ -52,7 +52,6 @@ type tag struct{ Key, Value string }
 
 // Server is an in-memory Secrets Manager.
 type Server struct {
-	t       testing.TB
 	mu      sync.Mutex
 	secrets map[string]*secret // by name
 	seq     int
@@ -62,7 +61,7 @@ type Server struct {
 // New returns an empty Server.
 func New(t testing.TB) *Server {
 	t.Helper()
-	return &Server{t: t, secrets: map[string]*secret{}, now: func() time.Time { return time.Now().UTC() }}
+	return &Server{secrets: map[string]*secret{}, now: func() time.Time { return time.Now().UTC() }}
 }
 
 // Client returns a real secretsmanager.Client talking to this Server.
@@ -135,11 +134,17 @@ func (s *Server) lookup(id string) (*secret, bool) {
 		return sec, true
 	}
 	for _, sec := range s.secrets {
-		if sec.arn == id {
+		if sec.arn == id || sec.partialARN() == id {
 			return sec, true
 		}
 	}
 	return nil, false
+}
+
+// partialARN is the ARN without its random "-xxxxxx" suffix, which AWS also
+// accepts as a SecretId.
+func (sec *secret) partialARN() string {
+	return sec.arn[:strings.LastIndexByte(sec.arn, '-')]
 }
 
 func (s *Server) nextToken() string {
@@ -412,18 +417,29 @@ func (s *Server) deleteSecret(in map[string]json.RawMessage) (any, *apiError) {
 	if !ok {
 		return nil, notFound()
 	}
+	force, _ := field[bool](in, "ForceDeleteWithoutRecovery")
+	days, hasDays := field[int](in, "RecoveryWindowInDays")
+	if force && hasDays {
+		return nil, &apiError{400, "InvalidParameterException", "You can't use ForceDeleteWithoutRecovery in conjunction with RecoveryWindowInDays."}
+	}
+	if !hasDays {
+		days = 30
+	}
+	if days < 7 || days > 30 {
+		return nil, &apiError{400, "InvalidParameterException", "RecoveryWindowInDays value must be between 7 and 30 days (inclusive)."}
+	}
 	now := s.now()
-	if force, _ := field[bool](in, "ForceDeleteWithoutRecovery"); force {
+	when := now
+	if force {
 		delete(s.secrets, sec.name)
 	} else {
-		days, ok := field[int](in, "RecoveryWindowInDays")
-		if !ok {
-			days = 30
+		if sec.deleted != nil {
+			return nil, invalid("You tried to perform the operation on a secret that's currently marked deleted.")
 		}
-		when := now.AddDate(0, 0, days)
+		when = now.AddDate(0, 0, days)
 		sec.deleted = &when
 	}
-	return map[string]any{"ARN": sec.arn, "Name": sec.name, "DeletionDate": epoch(now)}, nil
+	return map[string]any{"ARN": sec.arn, "Name": sec.name, "DeletionDate": epoch(when)}, nil
 }
 
 func (s *Server) restoreSecret(in map[string]json.RawMessage) (any, *apiError) {

@@ -45,7 +45,6 @@ type store struct {
 
 // Server is an in-memory Secrets Store.
 type Server struct {
-	t      testing.TB
 	mu     sync.Mutex
 	stores map[string]*store
 	seq    int
@@ -57,7 +56,7 @@ type Server struct {
 // New returns a Server with one empty store named "default"; see StoreID.
 func New(t testing.TB) *Server {
 	t.Helper()
-	s := &Server{t: t, stores: map[string]*store{}, now: func() time.Time { return time.Now().UTC() }}
+	s := &Server{stores: map[string]*store{}, now: func() time.Time { return time.Now().UTC() }}
 	s.def = s.newStore("default")
 	m := http.NewServeMux()
 	m.HandleFunc("POST "+prefix, s.createStore)

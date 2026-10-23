@@ -38,10 +38,10 @@ old, _ := c.GetSecretValue(ctx, &secretsmanager.GetSecretValueInput{
 | `CreateSecret` | string or binary; description, tags, `ClientRequestToken`. Duplicate name → `ResourceExistsException` |
 | `PutSecretValue` | adds a version; `VersionStages` honoured |
 | `UpdateSecret` | description; a new value adds a version |
-| `GetSecretValue` | by name or ARN; by `VersionId` or `VersionStage` (default `AWSCURRENT`) |
+| `GetSecretValue` | by name, full ARN or partial ARN (no random suffix); by `VersionId` or `VersionStage` (default `AWSCURRENT`) |
 | `DescribeSecret` | including `VersionIdsToStages` |
 | `ListSecrets` | all live secrets, sorted by name; no filters, no pagination |
-| `DeleteSecret` | recovery window (secret becomes unreadable) or `ForceDeleteWithoutRecovery` |
+| `DeleteSecret` | recovery window of 7 to 30 days (secret becomes unreadable; `DeletionDate` is the purge date) or `ForceDeleteWithoutRecovery` |
 | `RestoreSecret` | undoes a scheduled deletion |
 
 Staging labels follow AWS: the newest version is `AWSCURRENT`, the one before it `AWSPREVIOUS`.
